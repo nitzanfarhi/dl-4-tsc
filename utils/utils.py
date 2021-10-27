@@ -334,6 +334,7 @@ def plot_epochs_metric(hist, file_name, metric='loss'):
     plt.title('model ' + metric)
     plt.ylabel(metric, fontsize='large')
     plt.xlabel('epoch', fontsize='large')
+    plt.ylim((0,50))
     plt.legend(['train', 'val'], loc='upper left')
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
@@ -370,7 +371,9 @@ def save_logs(output_directory, hist, y_pred, y_true, duration, lr=True, y_true_
     hist_df.to_csv(output_directory + 'history.csv', index=False)
 
     df_metrics = calculate_metrics(y_true, y_pred, duration, y_true_val, y_pred_val)
-    df_metrics.to_csv(output_directory + 'df_metrics.csv', index=False)
+    with open(output_directory+'df_metrics.csv', 'a') as f:
+            df_metrics.to_csv(f, header=f.tell()==0,index=False)
+
 
     index_best_model = hist_df['loss'].idxmin()
     row_best_model = hist_df.loc[index_best_model]
