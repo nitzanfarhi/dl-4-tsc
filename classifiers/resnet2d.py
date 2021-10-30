@@ -79,9 +79,9 @@ class Classifier_2DRESNET:
         
 
         import tensorflow.keras as K
-        model = K.applications.MobileNetV2(weights=None,input_shape=input_shape,classes = nb_classes)
+        #model = K.applications.MobileNetV2(weights=None,input_shape=input_shape,classes = nb_classes)
 
-        """        model = Sequential()
+        model = Sequential()
         model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(0.25))
@@ -90,7 +90,7 @@ class Classifier_2DRESNET:
         model.add(Dropout(0.25))
         model.add(Flatten())
         model.add(Dense(256, activation='relu'))
-        model.add(Dense(no_classes, activation='softmax'))"""
+        model.add(Dense(no_classes, activation='softmax'))
 
         model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(),
                       metrics=['accuracy'])

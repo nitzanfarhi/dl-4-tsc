@@ -288,8 +288,8 @@ else:
     sfc_name = itr
     
     verbose = False
-    if len(sys.argv)>6:
-        verbose = sys.argv[6]=='-v'
+    if len(sys.argv)>5:
+        verbose = sys.argv[5]=='-v'
 
     if itr == '_itr_0':
         itr = ''
