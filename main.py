@@ -23,6 +23,7 @@ from sfc.create_sfc import *
 
 func_dict = {"sweep":sweep,"scan":scan,"hilbert":gilbert_curve,"random":random}
 
+notc_list = ["Adiac","AllGestureWiimoteX","AllGestureWiimoteY","AllGestureWiimoteZ","ArrowHead","Beef","BeetleFly","BirdChicken","BME","Car","CBF","Chinatown","ChlorineConcentration","Coffee","Computers","CricketX","CricketY","CricketZ","Crop","DiatomSizeReduction","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","DodgerLoopDay","DodgerLoopGame","DodgerLoopWeekend","Earthquakes","ECG200","ECG5000","ECGFiveDays","ElectricDevices"]
 
 
 def calc_dims(ishape):
@@ -49,6 +50,30 @@ def train_a_ga(X):
     #pred = classifier.predict(mx_test, y_true,mx_train,y_train,y_test,return_df_metrics=True)
     return -pred
   
+
+def train_with_random_lines():
+    global model,x_train,y_train,x_test,y_test,y_true, m_row,m_col,nb_classes,input_shape, classifier
+    line_length = len(x_train[0])
+    print("Line Length",line_length)
+    lines = generate_needed_random_lines(32,32,line_length,10)
+
+    verbose = True
+    print(len(lines))
+    for line in lines:
+        x_train = data_generator(line,x_train,32,32,verbose=verbose)
+        x_test = data_generator(line,x_test,32,32,verbose=verbose)
+        input_shape = x_train.shape[1:]
+        print(input_shape)
+        img_width, img_height = input_shape[0], input_shape[1]
+        x_train = x_train.reshape(x_train.shape[0], img_width, img_height, 1)
+        x_test = x_test.reshape(x_test.shape[0], img_width, img_height, 1)
+        print(x_train.shape)
+
+        classifier = create_classifier(classifier_name, input_shape, nb_classes, output_directory,verbose=verbose)
+        classifier.epoch_num = 3000
+        fit_res = classifier.fit(x_train, y_train, x_test, y_test, y_true)
+        print(line,fit_res)
+
 def train_with_ga():
     global model,x_train,y_train,x_test,y_test,y_true, m_row,m_col,nb_classes,input_shape, classifier
     from geneticalgorithm2 import geneticalgorithm2 as ga2 # for creating and running optimization model
@@ -59,8 +84,22 @@ def train_with_ga():
     from geneticalgorithm2 import Callbacks # simple callbacks
     from geneticalgorithm2 import Actions, ActionConditions, MiddleCallbacks # middle callbacks
 
-    alg_params = {'max_num_iteration': 100,
-                                           'population_size':20,
+    DEBUG = 0
+
+    if DEBUG:
+        max_num_iteration = 2
+        population_size = 10
+        verbose = True
+        epoch_num = 1
+    else:
+        max_num_iteration = 100
+        population_size = 20
+        verbose = False
+        epoch_num = 50
+
+
+    alg_params = {'max_num_iteration': max_num_iteration,
+                                           'population_size':population_size,
                                            'mutation_probability':0.1,
                                            'elit_ratio': 0.01,
                                            'crossover_probability': 0.5,
@@ -90,41 +129,41 @@ def train_with_ga():
     # save orignal y because later we will use binary
     y_true = np.argmax(y_test, axis=1)
     print(m_row,m_col)
-    classifier = create_classifier(classifier_name, (m_row+1,m_col+1), nb_classes, output_directory,verbose=False)
+    classifier = create_classifier(classifier_name, (m_row,m_col), nb_classes, output_directory,verbose=verbose)
 
-    classifier.epoch_num = 1
+    classifier.epoch_num = epoch_num
     
     m_row, m_col = calc_dims(x_train.shape[1])
     m_cir_row = m_row // 2
     m_cir_col = m_col // 2
     m_total_weights = ((m_cir_col-1)*(m_cir_row-1)*2)+(m_cir_col-1)+(m_cir_row-1)
     
-    varbound = np.array([[0,m_total_weights+2]]*m_total_weights)
+    varbound = np.array([[1,15]]*m_total_weights)
     vartype = np.array([['int']]*m_total_weights)
-    
     model = ga2(train_a_ga, dimension = len(varbound),   
                 variable_boundaries = varbound,
                 variable_type='int', 
                 variable_type_mixed = None, 
                 function_timeout = 100000, 
                 algorithm_parameters= alg_params)
-    model.run(save_last_generation_as = output_directory+"res1.npy")
+    model.run()
     plt.show()
     print(f"Iteration 1 {model.output_dict['function']}")
     path = create_path_from_shape(m_row,m_col,model.output_dict["variable"])
     model.plot_results(save_as=output_directory+"iter1.png")
     model.plot_generation_scores(title = 'Population scores after ending of searching', save_as= output_directory+"plot_scores_end1.png")
     with open(output_directory+"path",'w') as mfile:
-        mfiel.write(str(path))
-    classifier.verbose = True
+        mfile.write(str(path))
+    classifier.verbose = verbose
     classifier.epoch_num = 5000
-    train_a_ga(model.output_dict['last_generation'])
-    plt.show()
+    print(model.output_dict)
+    train_a_ga(model.output_dict['last_generation']['variables'])
+    #plt.show()
 
-    print(f"Iteration 2 {model.output_dict['function']}")
-    path = create_path_from_shape(m_row,m_col,model.output_dict["variable"])
-    model.plot_results(save_as=output_directory+"iter2.png") 
-    model.plot_generation_scores(title = 'Population scores after ending of searching', save_as= output_directory+"plot_scores_end2.png")
+    #print(f"Iteration 2 {model.output_dict['function']}")
+    #path = create_path_from_shape(m_row,m_col,model.output_dict["variable"])
+    #model.plot_results(save_as=output_directory+"iter2.png") 
+    #model.plot_generation_scores(title = 'Population scores after ending of searching', save_as= output_directory+"plot_scores_end2.png")
 
     #classifier.epoch_num = 1000
     #model.run(start_generation=model.output_dict['last_generation'],save_last_generation_as = "res1.npy")
@@ -169,12 +208,18 @@ def fit_classifier(sfc_name,verbose=False):
         return
     
     if sfc_name == 'genetic':
-        train_with_ga()
+        try:
+            train_with_ga()
+        except ValueError:
+            print("Incompatible")
         return 
-
+    if sfc_name == 'raline':
+        train_with_random_lines()
+        return
     m_row, m_col = calc_dims(x_train.shape[1])
     x,y = func_dict[sfc_name](m_row,m_col)
 
+    print("verbose",verbose)
     x_train = data_generator((x,y),x_train,m_row,m_col,verbose=verbose)
     x_test = data_generator((x,y),x_test,m_row,m_col,verbose=verbose)
 
@@ -247,11 +292,12 @@ if sys.argv[1] == 'run_all':
                 print('\t\titer', iter)
                 for sfc_name in ['genetic']:
                 #for sfc_name in ['random','sweep','scan','hilbert']:
-
                     tmp_output_directory = root_dir + '/results/' + classifier_name + '/' + archive_name + '/'+sfc_name+'/'
                     for dataset_name in utils.constants.dataset_names_for_archive[archive_name][::]:
-
-                        try:
+                        if dataset_name in notc_list:
+                            print(dataset_name,"notc")
+                            continue
+                        #try:
                             print('\t\t\tdataset_name: ', dataset_name)
 
                             output_directory = tmp_output_directory + dataset_name + '/'
@@ -263,11 +309,13 @@ if sys.argv[1] == 'run_all':
 
                             # the creation of this directory means
                             create_directory(output_directory + '/DONE')
-                        except ValueError:
-                            with open('not_compatible.txt','a') as mfile:
-                                mfile.write(f"{dataset_name} not compatible\n")
+                            
+                        #except ValueError:
+                        #    print("ERROR!!")
+                        #    with open('not_compatible.txt','a') as mfile:
+                        #        mfile.write(f"{dataset_name} not compatible\n")
 
-
+# python main.py UCRArchive_2018 CinCECGTorso resnet2d random
 elif sys.argv[1] == 'transform_mts_to_ucr_format':
     transform_mts_to_ucr_format()
 elif sys.argv[1] == 'visualize_filter':
@@ -288,8 +336,8 @@ else:
     sfc_name = itr
     
     verbose = False
-    if len(sys.argv)>6:
-        verbose = sys.argv[6]=='-v'
+    if len(sys.argv)>5:
+        verbose = sys.argv[5]=='-v'
 
     if itr == '_itr_0':
         itr = ''

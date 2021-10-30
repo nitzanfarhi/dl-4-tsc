@@ -122,24 +122,24 @@ class Classifier_2DRESNET:
         hist = self.model.fit(x_train, y_train, batch_size=mini_batch_size, epochs=nb_epochs,
                               verbose=self.verbose, validation_data=(x_val, y_val), callbacks=self.callbacks)
 
-        #duration = time.time() - start_time
+        duration = time.time() - start_time
 
         #self.model.save(self.output_directory + 'last_model.hdf5')
 
-        #y_pred = self.predict(x_val, y_true, x_train, y_train, y_val,
-        #                      return_df_metrics=False)
+        y_pred = self.predict(x_val, y_true, x_train, y_train, y_val,
+                              return_df_metrics=False)
 
         # save predictions
         #np.save(self.output_directory + 'y_pred.npy', y_pred)
 
         # convert the predicted from binary to integer
-        #y_pred = np.argmax(y_pred, axis=1)
+        y_pred = np.argmax(y_pred, axis=1)
 
-        #df_metrics = save_logs(self.output_directory, hist, y_pred, y_true, duration)
+        df_metrics = save_logs(self.output_directory, hist, y_pred, y_true, duration)
 
         keras.backend.clear_session()
 
-        return hist.history['accuracy'][-1]
+        return hist.history['val_accuracy'][-1]
     
     def fit_generator(self, x_train, y_train, x_val, y_val, y_true):
         if not tf.test.is_gpu_available:

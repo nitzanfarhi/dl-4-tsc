@@ -389,8 +389,8 @@ def save_logs(output_directory, hist, y_pred, y_true, duration, lr=True, y_true_
     if lr == True:
         df_best_model['best_model_learning_rate'] = row_best_model['lr']
     df_best_model['best_model_nb_epoch'] = index_best_model
-
-    df_best_model.to_csv(output_directory + 'df_best_model.csv', index=False)
+    with open(output_directory+'df_best_model.csv', 'a') as f:
+            df_best_model.to_csv(f, header=f.tell()==0,index=False)
 
     # for FCN there is no hyperparameters fine tuning - everything is static in code
 

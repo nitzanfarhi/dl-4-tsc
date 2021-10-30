@@ -20,6 +20,8 @@ class Classifier_RESNET:
 
     def __init__(self, output_directory, input_shape, nb_classes, verbose=False, build=True, load_weights=False):
         self.output_directory = output_directory
+        self.epoch_num = 5
+
         if build == True:
             self.model = self.build_model(input_shape, nb_classes)
             if (verbose == True):
@@ -33,7 +35,12 @@ class Classifier_RESNET:
             else:
                 self.model.save_weights(self.output_directory + 'model_init.hdf5')
         return
-
+    
+    
+    def reset_model(self):
+        self.model.load_weights(self.output_directory + 'model_init.hdf5')
+        
+        
     def build_model(self, input_shape, nb_classes):
         n_feature_maps = 64
 
@@ -126,6 +133,40 @@ class Classifier_RESNET:
             exit()
         # x_val and y_val are only used to monitor the test loss and NOT for training
         batch_size = 64
+        nb_epochs = self.epoch_num
+
+        mini_batch_size = int(min(x_train.shape[0] / 10, batch_size))
+
+        start_time = time.time()
+
+        hist = self.model.fit(x_train, y_train, batch_size=mini_batch_size, epochs=nb_epochs,
+                              verbose=self.verbose, validation_data=(x_val, y_val), callbacks=self.callbacks)
+
+        duration = time.time() - start_time
+
+        self.model.save(self.output_directory + 'last_model.hdf5')
+
+        y_pred = self.predict(x_val, y_true, x_train, y_train, y_val,
+                              return_df_metrics=False)
+
+        # save predictions
+        np.save(self.output_directory + 'y_pred.npy', y_pred)
+
+        # convert the predicted from binary to integer
+        y_pred = np.argmax(y_pred, axis=1)
+
+        df_metrics = save_logs(self.output_directory, hist, y_pred, y_true, duration)
+
+        keras.backend.clear_session()
+
+        return df_metrics
+    
+    def fit_generator(self, x_train, y_train, x_val, y_val, y_true):
+        if not tf.test.is_gpu_available:
+            print('error')
+            exit()
+        # x_val and y_val are only used to monitor the test loss and NOT for training
+        batch_size = 64
         nb_epochs = 1500
 
         mini_batch_size = int(min(x_train.shape[0] / 10, batch_size))
@@ -153,7 +194,6 @@ class Classifier_RESNET:
         keras.backend.clear_session()
 
         return df_metrics
-
     def predict(self, x_test, y_true, x_train, y_train, y_test, return_df_metrics=True):
         start_time = time.time()
         model_path = self.output_directory + 'best_model.hdf5'

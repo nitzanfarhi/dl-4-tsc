@@ -129,7 +129,7 @@ def create_path(grid_graph,circuit_mat,row,col):
                 first_node = next_node
                 break
         if counter+1!=len(semi_result_path):
-            #print("Path Error",r,c)
+            print("Path Error",r,c)
             return
         else:
             counter+=1
@@ -145,8 +145,64 @@ def create_path_from_shape(row,col,weights):
     circuit_mat=create_circuit(row,col, weights)
     return create_path(grid_graph,circuit_mat,row,col)
 
+# i and j are the indices for the node whose neighbors you want to find
+def find_neighbours(grid, i, j):
+    return np.array([grid[i+1,j], grid[i-1,j],grid[i,j+1], grid[i,j-1]])
 
-# In[15]:
+moveOptions = np.array([[0,-1],[0,1],[1,0],[-1,0]])    
+
+def convert_line_format(line):
+    x = []
+    y = []
+    for item in line:
+        x.append(item[0][0])
+        y.append(item[0][1])
+    x.append(line[-1][1][0])
+    y.append(line[-1][1][1])
+    return (x,y)
+def generate_needed_random_lines(n,m,line_length,num_of_lines):
+    lines = []
+    for i in range(10000):
+        line = generate_random_line(n,m)
+        if(len(line)>=line_length):
+            lines.append(convert_line_format(line))
+        if len(lines) >= num_of_lines:
+            break
+    return lines
+
+def generate_random_line(n,m):
+
+    # grid is True is space is valid to be occupied, otherwise False
+    # padded with False (boundaries)
+    grid = np.ones((n,m),bool)
+    pad = np.zeros((n+2,m+2),bool)
+    coor = (0,0)
+    line = []
+    # run until no valid moves left
+    while True:
+
+        # mark coordinates that have been occupied
+        # lineCollections plot inverted so must transform coordinates to match
+        grid[n-coor[1]-1, coor[0]] = False
+
+        # insert grid such that there is 1 cell width boundary of False
+        pad[1:-1,1:-1] = grid
+
+        neighbours = find_neighbours(pad, n-coor[1], coor[0]+1)
+        validOptions = moveOptions[neighbours]
+
+        if not np.any(neighbours):
+            break
+
+        move = np.random.randint(0,len(validOptions))
+        nextCoor = list(coor)
+        nextCoor += validOptions[move]
+        nextCoor = tuple(nextCoor)
+
+        line.append([coor,nextCoor])
+        coor = nextCoor
+        
+    return line
 
 
     
@@ -420,6 +476,7 @@ def data_generator(path,totalX,row,col,verbose=False):
             final_img = np.zeros((len(np.unique(x_pos))+1,len(np.unique(y_pos))+1,feature_num))
         else:
             final_img =  np.zeros((len(np.unique(x_pos))+1,len(np.unique(y_pos))+1))
+            final_img = np.zeros((row,col))
         for cur_x, cur_y, value in zip(x_pos, y_pos, x_vals):
                 if  math.isnan(value):
                     value = 0

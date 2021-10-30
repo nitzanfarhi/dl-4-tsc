@@ -21,8 +21,14 @@ class Classifier_MLP:
 				self.model.summary()
 			self.verbose = verbose
 			self.model.save_weights(self.output_directory + 'model_init.hdf5')
+		self.epoch_num = 5
 		return
-
+    
+    
+	def reset_model(self):
+		self.model.load_weights(self.output_directory + 'model_init.hdf5')
+            
+            
 	def build_model(self, input_shape, nb_classes):
 		input_layer = keras.layers.Input(input_shape)
 
@@ -63,7 +69,7 @@ class Classifier_MLP:
 			exit()
 		# x_val and y_val are only used to monitor the test loss and NOT for training  
 		batch_size = 16
-		nb_epochs = 5000
+		nb_epochs = self.epoch_num
 
 		mini_batch_size = int(min(x_train.shape[0]/10, batch_size))
 

@@ -402,7 +402,8 @@ class Classifier_MCNN:
         # print(y_true.shape)
         # print(y_pred.shape)
 
-        df_metrics.to_csv(self.output_directory+'df_metrics.csv', index=False)
+        with open(self.output_directory+'df_metrics.csv', 'a') as f:
+            df_metrics.to_csv(f, header=f.tell()==0,index=False)
 
         return df_metrics, model , best_validation_loss
 
